@@ -161,7 +161,7 @@ const Register = () => {
         />
         <input
           name="language"
-          placeholder="Target Language"
+          placeholder="Native Language"
           onChange={handleChange}
           style={styles.input}
         />

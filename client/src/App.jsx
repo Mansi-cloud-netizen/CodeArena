@@ -9,7 +9,6 @@ import Logout from "./pages/Logout/Logout";
 import PrivateRoute from "./components/PrivateRoute";
 import Dashboard from "./pages/Dashboard"; // Assuming you have a Dashboard component
 import Home from "./pages/Home";
-import ProgressSnapshot from "./pages/ProgressSnapshot";  
 import STT from "./pages/STT"; // Assuming you have a STT component 
 
 
@@ -26,7 +25,6 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/progress" element={<ProgressSnapshot />} />
         <Route path="/logout" element={<Logout />} />
         <Route
           path="/dashboard"

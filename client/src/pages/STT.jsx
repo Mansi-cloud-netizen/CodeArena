@@ -148,7 +148,7 @@ function STT() {
 
       const currentChatHistory = [{ role: "user", parts: [{ text: prompt }] }];
       const payload = { contents: currentChatHistory };
-      const apiKey = "AIzaSyD_S8DL9nWtmpUx9XWa_CM_4YBaD2XlAWE"; 
+      const apiKey = "AIzaSyCY7ydi2ANb-mlFcQefIxGZAmkY2v--2qU"; 
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
       const response = await fetch(apiUrl, {
@@ -156,14 +156,28 @@ function STT() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      const formatGeminiResponse = (text) => {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1')       // remove **bold**
+    .replace(/\*(.*?)\*/g, '$1')           // remove *italic or bullets*
+    .replace(/\n\s*\*/g, '\n•')            // turn `\n*` into bullets
+    .replace(/(\r\n|\r|\n)/g, '<br>')      // preserve line breaks
+    .replace(/\s*•/g, '<br>•')             // format bullet spacing
+    .replace(/([^.])\*/g, '$1')            // stray *
+    .replace(/\s+/g, ' ')                  // collapse extra spaces
+    .trim();
+};
+
 
       const result = await response.json();
 
       if (result.candidates && result.candidates.length > 0 &&
         result.candidates[0].content && result.candidates[0].content.parts &&
         result.candidates[0].content.parts.length > 0) {
-        const aiText = result.candidates[0].content.parts[0].text;
-        setGrammarOutputText(aiText.replace(/\n/g, '<br>'));
+       const aiText = result.candidates[0].content.parts[0].text.trim();
+const cleanedGrammarResponse = formatGeminiResponse(aiText);
+setGrammarOutputText(cleanedGrammarResponse);
+
         setSpeakGrammarBtnDisabled(false);
         setDeleteGrammarBtnDisabled(false);
       } else {
@@ -247,7 +261,7 @@ function STT() {
       }];
 
       const payload = { contents: currentChatHistory };
-      const apiKey = "AIzaSyD_S8DL9nWtmpUx9XWa_CM_4YBaD2XlAWE"; 
+      const apiKey = "AIzaSyCY7ydi2ANb-mlFcQefIxGZAmkY2v--2qU"; 
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
       const response = await fetch(apiUrl, {
@@ -286,38 +300,46 @@ const addChatMessage = useCallback(async (text, sender) => {
   if (sender === 'ai') {
     let animatedText = '';
     
-    // Add the AI message with placeholder once, and update during animation
-    setChatHistory(prev => {
-      const updated = [...prev, { role: 'model', parts: [{ text: '' }] }];
-      return updated;
-    });
+    // Clean Gemini's markdown output before animating
+    const cleanedText = text
+      .replace(/\*\*(.*?)\*\*/g, '$1')    // bold -> plain
+      .replace(/\*(.*?)\*/g, '$1')        // italic -> plain
+      .replace(/•/g, '-')                 // bullets
+      .replace(/\n/g, ' ')                // newlines -> space
+      .replace(/\r/g, '')                 // carriage return
+      .replace(/\t/g, ' ')                // tabs
+      .replace(/\s+/g, ' ')               // collapse multiple spaces
+      .trim();
 
-    for (let i = 0; i <= text.length; i++) {
-      const currentText = text.slice(0, i);
+    // Extract readable core part
+    const [mainReply] = cleanedText.split(/(?=Good job|Keep going|You're doing great|Excellent|Well done)/i);
+    const finalReply = mainReply.trim();
+
+    // Add AI message with animated text
+    setChatHistory(prev => [...prev, { role: 'model', parts: [{ text: '' }] }]);
+
+    for (let i = 0; i <= finalReply.length; i++) {
+      const currentText = finalReply.slice(0, i);
 
       setChatHistory(prev => {
         const updated = [...prev];
-        // Only update the last message
-        updated[updated.length-1] = {
+        updated[updated.length - 1] = {
           role: 'model',
           parts: [{ text: currentText }]
-        }; 
+        };
         return updated;
       });
 
       await new Promise(resolve => setTimeout(resolve, 20));
-      if (chatDisplayRef.current) {
-        chatDisplayRef.current.scrollTop = chatDisplayRef.current.scrollHeight;
-      }
+      chatDisplayRef.current?.scrollTo(0, chatDisplayRef.current.scrollHeight);
     }
   } else {
-    // User message: append once
+    // User message
     setChatHistory(prev => [...prev, { role: 'user', parts: [{ text }] }]);
-    if (chatDisplayRef.current) {
-      chatDisplayRef.current.scrollTop = chatDisplayRef.current.scrollHeight;
-    }
+    chatDisplayRef.current?.scrollTo(0, chatDisplayRef.current.scrollHeight);
   }
 }, []);
+
 
 
   const initializeChat = useCallback(() => {
@@ -338,7 +360,7 @@ const addChatMessage = useCallback(async (text, sender) => {
 
     try {
       const payload = { contents: currentChatHistory };
-      const apiKey = "AIzaSyD_S8DL9nWtmpUx9XWa_CM_4YBaD2XlAWE";  
+      const apiKey = "AIzaSyCY7ydi2ANb-mlFcQefIxGZAmkY2v--2qU";  
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
       const response = await fetch(apiUrl, {
@@ -346,14 +368,28 @@ const addChatMessage = useCallback(async (text, sender) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      const formatGeminiResponse = (text) => {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1')       // remove **bold**
+    .replace(/\*(.*?)\*/g, '$1')           // remove *italic or bullets*
+    .replace(/\n\s*\*/g, '\n•')            // turn `\n*` into bullets
+    .replace(/(\r\n|\r|\n)/g, '<br>')      // preserve line breaks
+    .replace(/\s*•/g, '<br>•')             // ensure proper spacing
+    .replace(/([^.])\*/g, '$1')            // clean stray asterisks
+    .replace(/\s+/g, ' ')                  // collapse extra whitespace
+    .trim();
+};
+
 
       const result = await response.json();
 
       if (result.candidates && result.candidates.length > 0 &&
         result.candidates[0].content && result.candidates[0].content.parts &&
         result.candidates[0].content.parts.length > 0) {
-        const aiText = result.candidates[0].content.parts[0].text;
-        await addChatMessage(aiText, 'ai');
+        const rawText = result.candidates[0].content.parts[0].text.trim();
+const cleanedChatReply = formatGeminiResponse(rawText);
+await addChatMessage(cleanedChatReply, 'ai');
+
         // setChatHistory(prev => [...prev, { role: "model", parts: [{ text: aiText }] }]);
       } else {
         addChatMessage('AI failed to respond. Please try again.', 'ai');
@@ -462,19 +498,21 @@ const languageNameMap = {
 const targetLangName = languageNameMap[selectedLang] || 'English';
 
 const prompt = `
-You are acting as a ${selectedRole}.
-The user's native language is ${userLangName}. They're learning ${targetLangName}.
-They said: "${transcript}"
+You are a ${selectedRole} helping someone learn ${targetLangName}. The user spoke in their native language (${userLangName}):
+
+"${transcript}"
 
 Please:
-1. Translate or interpret their input if needed.
-2. Respond in ${targetLangName}, correcting mistakes if necessary.
-3. Encourage continued learning with a simple, friendly response in ${targetLangName}.
+1. Translate and correct the input if needed.
+2. Respond in ${targetLangName} using simple and short sentences.
+3. Explain one relevant word or phrase they used (or should have used).
+4. End with a short encouragement message (like "Good job!" or "Keep going!").
+Make your response beginner-friendly.
 `;
 
           const currentChatHistory = [{ role: "user", parts: [{ text: prompt }] }];
           const payload = { contents: currentChatHistory };
-          const apiKey = "AIzaSyD_S8DL9nWtmpUx9XWa_CM_4YBaD2XlAWE"; // Canvas will automatically provide the API key
+          const apiKey = "AIzaSyCY7ydi2ANb-mlFcQefIxGZAmkY2v--2qU"; // Canvas will automatically provide the API key
           const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
           const response = await fetch(apiUrl, {
@@ -482,20 +520,38 @@ Please:
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
+          const formatGeminiResponse = (text) => {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1')                      // remove **bold**
+    .replace(/\*(.*?)\*/g, '$1')                          // remove *italic or inline bullets*
+    .replace(/\n\s*\*/g, '\n•')                           // convert new line bullets to •
+    .replace(/(\r\n|\r|\n)/g, '<br>')                     // preserve line breaks in JSX
+    .replace(/\s*•/g, '<br>•')                            // ensure bullets appear on new lines
+    .replace(/([^.])\*/g, '$1')                           // stray asterisks
+    .replace(/\s+/g, ' ')                                 // collapse multiple spaces
+    .trim();
+};
 
-          const result = await response.json();
 
-          if (result.candidates && result.candidates.length > 0 &&
-            result.candidates[0].content && result.candidates[0].content.parts &&
-            result.candidates[0].content.parts.length > 0) {
-            const aiText = result.candidates[0].content.parts[0].text;
-            setAiVoiceTextOutput(aiText.replace(/\n/g, '<br>'));
-            speakText(aiText, setSpeakAiVoiceBtnDisabled, setStopAiVoiceBtnDisabled, selectedLang);
-            setDeleteVoiceResponseBtnDisabled(false);
-          } else {
-            setAiVoiceTextOutput('AI failed to generate a voice response.');
-            console.error('Unexpected AI response structure:', result);
-          }
+          // Relevant Gemini API Response Processing Code (Updated)
+
+const result = await response.json();
+
+if (result.candidates && result.candidates.length > 0 &&
+  result.candidates[0].content && result.candidates[0].content.parts &&
+  result.candidates[0].content.parts.length > 0) {
+
+  const rawText = result.candidates[0].content.parts[0].text.trim();
+const cleanedText = formatGeminiResponse(rawText);
+
+setAiVoiceTextOutput(cleanedText);
+speakText(cleanedText.replace(/<br>/g, ' '), setSpeakAiVoiceBtnDisabled, setStopAiVoiceBtnDisabled, selectedLang);
+setDeleteVoiceResponseBtnDisabled(false);
+
+} else {
+  setAiVoiceTextOutput('AI failed to generate a voice response.');
+  console.error('Unexpected AI response structure:', result);
+}
         } catch (error) {
           console.error('Error calling Gemini API for voice response:', error);
           setAiVoiceTextOutput('An error occurred while getting AI voice response.');
@@ -1380,11 +1436,14 @@ Please:
               <button id="clearChatBtn" className="clear-chat-button" onClick={handleClearChat}>Clear Chat</button>
               <div id="chatDisplay" className="chat-container" ref={chatDisplayRef}>
                 {/* Chat messages will be appended here */}
-                {chatHistory.map((msg, index) => (
-                  <div key={index} className={`chat-message ${msg.role === 'user' ? 'user' : 'ai'}`}>
-                    {msg.parts[0].text}
-                  </div>
-                ))}
+               {chatHistory.map((msg, index) => (
+  <div
+    key={index}
+    className={`chat-message ${msg.role === 'user' ? 'user' : 'ai'}`}
+    dangerouslySetInnerHTML={{ __html: msg.parts[0].text }}
+  />
+))}
+
               </div>
               <div className="chat-input-area">
                 <input
